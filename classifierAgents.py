@@ -34,6 +34,7 @@ import numpy as np
 
 from classifier import Classifier
 
+
 def loadData(filepath):
     # open datafile, extract content into an array, and close.
     with open(filepath, 'r') as f: lines = f.readlines()
