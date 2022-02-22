@@ -1,7 +1,8 @@
+from cProfile import label
 from random import shuffle
 import numpy
 import math
-from scipy.stats import mode
+from statistics import mode
 from sklearn.neighbors import KNeighborsClassifier
 from collections import Counter
 
@@ -10,8 +11,16 @@ from collections import Counter
 #
 # Use the skeleton below for the classifier and insert your code here.
 #Euclidean Distance
-def euclidean_distance(x1, x2):
-    return numpy.sqrt(numpy.sum((x1 - x2) ** 2))
+def e_diff_calc(a, b):
+    a = numpy.asarray(a)
+    # print(x1,x2)
+    # print("______________")
+    # print(x1 - x2)
+    # print((x1 - x2) ** 2)
+    # print(numpy.sum((x1 - x2) ** 2))
+    # print("SUM:", numpy.sqrt(numpy.sum((x1 - x2) ** 2)))
+
+    return numpy.sqrt(numpy.sum((a - b) ** 2))
 
 # https://stackoverflow.com/questions/4601373/better-way-to-shuffle-two-numpy-arrays-in-unison
 def shuffle_array(a, b):
@@ -24,7 +33,7 @@ def shuffle_array(a, b):
 class Classifier:
     def __init__(self):
         print("INIT-CLASS", self)
-        self.k = 3
+        self.k = 5
    
        
     def train_test_split(self, X, y, split):
@@ -60,15 +69,21 @@ class Classifier:
        
     def predict(self, data, legal=None):
         y_pred = list()
-        for x in data:
-            # Compute distances between x and all examples in the training set
-            distances = [euclidean_distance(x, x_train) for x_train in self.X_train]
-            # Sort by distance and return indices of the first k neighbors
-            k_idx = numpy.argsort(distances)[: self.k]
-            # Extract the labels of the k nearest neighbor training samples
-            k_neighbor_labels = [self.y_train[i] for i in k_idx]
-            # return the most common class label
-            most_common = Counter(k_neighbor_labels).most_common(1)
-            y_pred.append(most_common[0][0])
-        print(numpy.array(y_pred))
-        return y_pred[0]
+        # for x in data:
+        # Compute distances between x and all examples in the training set
+        
+        e_diff = [e_diff_calc(data, x_train) for x_train in self.X_train]
+        # print(e_diff)
+        # Sort by distance and return indices of the first k neighbors
+        
+        min_diff_indexes = numpy.argsort(e_diff)
+        # https://stackoverflow.com/questions/5234090/how-to-take-the-first-n-items-from-a-generator-or-list
+        
+        k_indexes = min_diff_indexes[: self.k]
+        # print(k_indexes)
+        
+        # Extract the labels of the k nearest neighbor training samples
+        labelled_indexes = [self.y_train[i] for i in k_indexes]
+        # print(labelled_indexes)
+        
+        return mode(labelled_indexes)
