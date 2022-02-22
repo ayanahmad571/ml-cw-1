@@ -153,14 +153,11 @@ class DTClassifier:
     
     
     def fit(self, X_train, y_train, X_test, y_test,):
-        # self.X = X_train
-        # self.Y = y_train
-        num_cols = len(X_train[0])
-        col_labels = [f'C{c}' for c in range(len(X_train[0]))]
-        lables = [0,1,2,3]
-        print(gini_all(X_train, y_train))
+        gini_vals = gini_all(X_train, y_train)
+        gini_vals_np = np.asarray(gini_vals)
+        lowest_gini_feature_index = np.argmin(gini_vals_np)
 
-        print(col_labels)
+
         pass
 
     def predict(self, data):
@@ -207,7 +204,7 @@ class Classifier:
             self.knn.predict(self.X_train, self.y_train, data), 
             self.dt.predict(data), 
             self.rf.predict(self.X_train, self.y_train ,data)]
-        print("KNN", ret[0])
-        print("DT", ret[1])
-        print("RF", ret[2])
+        # print("KNN", ret[0])
+        # print("DT", ret[1])
+        # print("RF", ret[2])
         return ret[0]
