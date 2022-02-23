@@ -1,16 +1,27 @@
-from cProfile import label
-from random import random, shuffle
+# classifier.py
+# Lin Li/26-dec-2021
+
+# Classifier extended and implemented by Ayan Ahmad
+# K-Number: 19002255
+
+
+# Import
 import numpy as np
 import math
 from statistics import mode
 
-# classifier.py
-# Lin Li/26-dec-2021
-#
-# Use the skeleton below for the classifier and insert your code here.
 
-#Euclidean Distance
+
+### Start Global Functions
+
 def e_diff_calc(a, b):
+    """
+    e_diff_calc does blah
+
+    :param p1: desc
+    :param p1: desc
+    :return: describe what it returns
+    """
     a = np.asarray(a)
     # print(x1,x2)
     # print("______________")
@@ -123,19 +134,6 @@ def convertNumberToMove(number):
         elif number == 3:
             return "WEST"
 
-
-class Node:
-    def __init__(
-        self, feature=None, left=None, right=None, *, value=None
-    ):
-        self.feature = feature
-        self.left = left
-        self.right = right
-        self.value = value
-
-    def is_leaf_node(self):
-        return self.value is not None
-
 def split(X,y,feat):
     zeroVals_X = list()
     zeroVals_y = list()
@@ -155,9 +153,24 @@ def split(X,y,feat):
     
     return zeroVals_X, zeroVals_y, oneVals_X, oneVals_y
 
+### End Global Functions
+
+
+class Node:
+    def __init__(
+        self, feature=None, left=None, right=None, *, value=None
+    ):
+        self.feature = feature
+        self.left = left
+        self.right = right
+        self.value = value
+
+    def is_leaf_node(self):
+        return self.value is not None
+
 class KNNClassifier:
     def __init__(self):
-        print("Init KNN ", self)
+        # print("Init KNN ", self)
         self.k = 5
     
     def predict(self, X_train, y_train, data):
@@ -178,7 +191,7 @@ class KNNClassifier:
 
 class DTClassifier:
     def __init__(self, max_depth = 100, num_feats = 25):
-        print("Init DT-CLASS", self)
+        # print("Init DT-CLASS", self)
         self.max_depth = max_depth
         self.num_feats = num_feats
         self.root = None
@@ -188,21 +201,23 @@ class DTClassifier:
         self.root = self.build_tree(X_train, y_train)
         pass
 
-    def build_tree(self, X, y, depth=0):
+    def build_tree(self, X, y, depth=0, plurality_parent = 0):
         num_unique_labels = len(np.unique(y))
         
         #stop-condition
         if(depth >= self.max_depth or num_unique_labels < 2):
             if len(y)<1:
-                return Node(value = 0)    
+                return Node(value = plurality_parent) # TODO: Add some parent code   
             return Node(value = mode(y))
+        
+        y_mode = mode(y)
         
         gini_vals = gini_all(X, y)
         gini_vals_np = np.asarray(gini_vals)
         lowest_gini_feature_index = np.argmin(gini_vals_np)
         zeroVals_X, zeroVals_y, oneVals_X, oneVals_y = split(X, y, lowest_gini_feature_index)
-        left = self.build_tree(zeroVals_X, zeroVals_y, depth + 1)
-        right = self.build_tree(oneVals_X, oneVals_y, depth + 1)
+        left = self.build_tree(zeroVals_X, zeroVals_y, depth + 1, y_mode)
+        right = self.build_tree(oneVals_X, oneVals_y, depth + 1, y_mode)
 
         return Node(lowest_gini_feature_index, left, right)
 
@@ -221,8 +236,8 @@ class DTClassifier:
         return y_pred
 
 class RFClassifier:
-    def __init__(self, num_trees=15, max_depth=100, num_feats=None):
-        print("Init RF-CLASS", self)
+    def __init__(self, num_trees=20, max_depth=100, num_feats=None):
+        # print("Init RF-CLASS", self)
         self.num_trees = num_trees
         self.max_depth = max_depth
         self.num_feats = num_feats
@@ -252,9 +267,9 @@ class Classifier:
 
     def reset(self):
         print("RESET-ALL", self)
-        self.knn = ""
-        self.dt = ""
-        self.rf = ""
+        self.knn = None
+        self.dt = None
+        self.rf = None
     
     def fit(self, data, target):
         print("FIT", data, target)
@@ -275,4 +290,3 @@ class Classifier:
         ]
         print("Options:", ret)
         return mode(ret)
-
