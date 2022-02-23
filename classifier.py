@@ -1,5 +1,5 @@
 from cProfile import label
-from random import shuffle
+from random import random, shuffle
 import numpy as np
 import math
 import pandas as pd 
@@ -107,6 +107,25 @@ def gini_all(X,y):
     
     return feature_gini
 
+def bootstraping(X,y):
+    num_rows = len(X)
+    num_samples = int((2*num_rows)/3)
+    random_indexes = list(np.random.randint(low = 0,high = num_rows, size=num_samples))
+    X = np.asarray(X)
+    y = np.asarray(y)
+    return X[random_indexes], y[random_indexes]
+
+def convertNumberToMove(number):
+        if number == 0:
+            return "NORTH"
+        elif number == 1:
+            return "EAST"
+        elif number == 2:
+            return "SOUTH"
+        elif number == 3:
+            return "WEST"
+
+
 class Node:
     def __init__(
         self, feature=None, left=None, right=None, *, value=None
@@ -155,14 +174,15 @@ class KNNClassifier:
         
         # Extract the labels of the k nearest neighbor training samples
         labelled_indexes = [y_train[i] for i in k_indexes]
-        
-        return mode(labelled_indexes)
+        y_pred = mode(labelled_indexes)
+        print("K-P:",self.convertNumberToMove(y_pred))
+        return y_pred
 
 class DTClassifier:
-    def __init__(self):
+    def __init__(self, max_depth = 100, num_feats = 25):
         print("Init DT-CLASS", self)
-        self.max_depth = 100
-        self.n_feats = 25
+        self.max_depth = max_depth
+        self.num_feats = num_feats
         self.root = None
     
     
@@ -192,33 +212,39 @@ class DTClassifier:
         if node.is_leaf_node():
             return node.value
 
-        print("NF",node.feature)
         if x[node.feature] < 1:
             return self.search(x, node.left)
         return self.search(x, node.right)
 
-    def convertNumberToMove(self, number):
-        if number == 0:
-            return "NORTH"
-        elif number == 1:
-            return "EAST"
-        elif number == 2:
-            return "SOUTH"
-        elif number == 3:
-            return "WEST"
 
     def predict(self, data):
         y_pred = self.search(data, self.root)
-        print("Pred:",self.convertNumberToMove(y_pred))
+        print("D-P:",convertNumberToMove(y_pred))
         return y_pred
 
 class RFClassifier:
-    def __init__(self):
+    def __init__(self, num_trees=100, max_depth=100, num_feats=None):
         print("Init RF-CLASS", self)
-        self.depth = 100
+        self.num_trees = num_trees
+        self.max_depth = max_depth
+        self.num_feats = num_feats
+        self.trees = []
     
-    def predict(self, X_train, y_train, data):
-        return 1
+    def fit(self, X, y):
+        self.trees = []
+        for t in range(self.num_trees):
+            print("Processing Tree", t)
+            dt = DTClassifier(max_depth=self.max_depth, num_feats=self.num_feats)
+            X_bts, y_bts = bootstraping(X, y)
+            dt.fit(X_bts, y_bts)
+            self.trees.append(dt)
+    
+    def predict(self, data):
+        y_preds_all = [dt.predict(data) for dt in self.trees]
+        print(y_preds_all)
+        y_pred = mode(y_preds_all)
+        print("R-P:",convertNumberToMove(y_pred))
+        return y_pred
 
 class Classifier:
     def __init__(self):
@@ -238,9 +264,8 @@ class Classifier:
         self.y = target
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, target, 0.8)
 
-        # self.knn.fit(self.X_train, self.y_train)
         self.dt.fit(self.X_train, self.y_train)
-        # self.rf.fit(self.X_train, self.y_train)
+        self.rf.fit(self.X_train, self.y_train)
     
 
     def predict(self, data, legal=None):
@@ -253,4 +278,6 @@ class Classifier:
         # print("DT", ret[1])
         # print("RF", ret[2])
         # return ret[1]
-        return self.dt.predict(data)
+        # return self.dt.predict(data)
+        return self.rf.predict(data)
+
