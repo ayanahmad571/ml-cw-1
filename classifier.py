@@ -135,10 +135,9 @@ class KNNClassifier:
 
 class Node:
     def __init__(
-        self, feature=None, threshold=None, left=None, right=None, *, value=None
+        self, feature=None, left=None, right=None, *, value=None
     ):
         self.feature = feature
-        self.threshold = threshold
         self.left = left
         self.right = right
         self.value = value
@@ -146,24 +145,78 @@ class Node:
     def is_leaf_node(self):
         return self.value is not None
 
+def split(X,y,feat):
+    zeroVals_X = list()
+    zeroVals_y = list()
+    oneVals_X = list()
+    oneVals_y = list()
+    
+    for row_index in range(len(X)):
+       
+        at_index_val = X[row_index][feat]
+        at_index_label = y[row_index]
+        if(at_index_val == 0):
+            zeroVals_X.append(X[row_index])
+            zeroVals_y.append(at_index_label)
+        else:
+            oneVals_X.append(X[row_index])
+            oneVals_y.append(at_index_label)
+    
+    return zeroVals_X, zeroVals_y, oneVals_X, oneVals_y
+
 class DTClassifier:
     def __init__(self):
         print("Init DT-CLASS", self)
-        self.depth = 10
+        self.max_depth = 100
+        self.n_feats = 25
+        self.root = None
     
     
-    def fit(self, X_train, y_train, X_test, y_test,):
-        gini_vals = gini_all(X_train, y_train)
-        gini_vals_np = np.asarray(gini_vals)
-        lowest_gini_feature_index = np.argmin(gini_vals_np)
-
-
+    def fit(self, X_train, y_train):
+        self.root = self.build_tree(X_train, y_train)
         pass
 
+    def build_tree(self, X, y, depth=0):
+        num_unique_labels = len(np.unique(y))
+        
+        #stop-condition
+        if(depth >= self.max_depth or num_unique_labels < 2):
+            if len(y)<1:
+                return Node(value = 0)    
+            return Node(value = mode(y))
+        
+        gini_vals = gini_all(X, y)
+        gini_vals_np = np.asarray(gini_vals)
+        lowest_gini_feature_index = np.argmin(gini_vals_np)
+        zeroVals_X, zeroVals_y, oneVals_X, oneVals_y = split(X, y, lowest_gini_feature_index)
+        left = self.build_tree(zeroVals_X, zeroVals_y, depth + 1)
+        right = self.build_tree(oneVals_X, oneVals_y, depth + 1)
+
+        return Node(lowest_gini_feature_index, left, right)
+
+    def search(self, x, node):
+        if node.is_leaf_node():
+            return node.value
+
+        print("NF",node.feature)
+        if x[node.feature] < 1:
+            return self.search(x, node.left)
+        return self.search(x, node.right)
+
+    def convertNumberToMove(self, number):
+        if number == 0:
+            return "NORTH"
+        elif number == 1:
+            return "EAST"
+        elif number == 2:
+            return "SOUTH"
+        elif number == 3:
+            return "WEST"
+            
     def predict(self, data):
-        # y_pred = np.array([self._traverse_tree(x, self.root) for x in X_test])
-        # print(y_pred)
-        return 1
+        y_pred = self.search(data, self.root)
+        print("Pred:",self.convertNumberToMove(y_pred))
+        return y_pred
 
 class RFClassifier:
     def __init__(self):
@@ -179,8 +232,6 @@ class Classifier:
         self.dt = DTClassifier()
         self.rf = RFClassifier()
 
-
-
     def reset(self):
         print("RESET-ALL", self)
         self.knn = ""
@@ -194,17 +245,18 @@ class Classifier:
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, target, 0.8)
 
         # self.knn.fit(self.X_train, self.y_train)
-        self.dt.fit(self.X_train, self.y_train, self.X_test, self.y_test)
+        self.dt.fit(self.X_train, self.y_train)
         # self.rf.fit(self.X_train, self.y_train)
     
 
     def predict(self, data, legal=None):
         print("_______________")
-        ret = [
-            self.knn.predict(self.X_train, self.y_train, data), 
-            self.dt.predict(data), 
-            self.rf.predict(self.X_train, self.y_train ,data)]
+        # ret = [
+        #     self.knn.predict(self.X_train, self.y_train, data), 
+        #     self.dt.predict(data), 
+        #     self.rf.predict(self.X_train, self.y_train ,data)]
         # print("KNN", ret[0])
         # print("DT", ret[1])
         # print("RF", ret[2])
-        return ret[0]
+        # return ret[1]
+        return self.dt.predict(data)

@@ -102,7 +102,7 @@ class ClassifierAgent(Agent):
         action = self.convertNumberToMove(self.classifier.predict(features, legal))
         # randomly pick a legal action if the estimated action is illegal
         action = action if action in legal else random.choice(legal)
-        
+        print("Action:", action)
         # getAction has to return a move. We need to pass the set of legal
         # moves to the API so it can do some safety checking.
         return api.makeMove(action, legal)
