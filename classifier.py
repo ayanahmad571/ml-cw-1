@@ -107,32 +107,6 @@ def gini_all(X,y):
     
     return feature_gini
 
-
-
-class KNNClassifier:
-    def __init__(self):
-        print("Init KNN ", self)
-        self.k = 5
-    
-    def predict(self, X_train, y_train, data):
-        # Compute distances between x and all examples in the training set        
-        e_diff = [e_diff_calc(data, x_train) for x_train in X_train]
-
-        # Sort by distance and return indices of the first k neighbors        
-        min_diff_indexes = np.argsort(e_diff)
-        
-        # https://stackoverflow.com/questions/5234090/how-to-take-the-first-n-items-from-a-generator-or-list
-        k_indexes = min_diff_indexes[: self.k]
-        
-        # Extract the labels of the k nearest neighbor training samples
-        labelled_indexes = [y_train[i] for i in k_indexes]
-        
-        return mode(labelled_indexes)
-
-
-
-
-
 class Node:
     def __init__(
         self, feature=None, left=None, right=None, *, value=None
@@ -163,6 +137,26 @@ def split(X,y,feat):
             oneVals_y.append(at_index_label)
     
     return zeroVals_X, zeroVals_y, oneVals_X, oneVals_y
+
+class KNNClassifier:
+    def __init__(self):
+        print("Init KNN ", self)
+        self.k = 5
+    
+    def predict(self, X_train, y_train, data):
+        # Compute distances between x and all examples in the training set        
+        e_diff = [e_diff_calc(data, x_train) for x_train in X_train]
+
+        # Sort by distance and return indices of the first k neighbors        
+        min_diff_indexes = np.argsort(e_diff)
+        
+        # https://stackoverflow.com/questions/5234090/how-to-take-the-first-n-items-from-a-generator-or-list
+        k_indexes = min_diff_indexes[: self.k]
+        
+        # Extract the labels of the k nearest neighbor training samples
+        labelled_indexes = [y_train[i] for i in k_indexes]
+        
+        return mode(labelled_indexes)
 
 class DTClassifier:
     def __init__(self):
@@ -212,7 +206,7 @@ class DTClassifier:
             return "SOUTH"
         elif number == 3:
             return "WEST"
-            
+
     def predict(self, data):
         y_pred = self.search(data, self.root)
         print("Pred:",self.convertNumberToMove(y_pred))
