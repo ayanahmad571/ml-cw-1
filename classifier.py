@@ -2,15 +2,13 @@ from cProfile import label
 from random import random, shuffle
 import numpy as np
 import math
-import pandas as pd 
 from statistics import mode
-# from sklearn.neighbors import KNeighborsClassifier
-from collections import Counter
 
 # classifier.py
 # Lin Li/26-dec-2021
 #
 # Use the skeleton below for the classifier and insert your code here.
+
 #Euclidean Distance
 def e_diff_calc(a, b):
     a = np.asarray(a)
@@ -175,7 +173,7 @@ class KNNClassifier:
         # Extract the labels of the k nearest neighbor training samples
         labelled_indexes = [y_train[i] for i in k_indexes]
         y_pred = mode(labelled_indexes)
-        print("K-P:",self.convertNumberToMove(y_pred))
+        print("K-P:",convertNumberToMove(y_pred))
         return y_pred
 
 class DTClassifier:
@@ -223,7 +221,7 @@ class DTClassifier:
         return y_pred
 
 class RFClassifier:
-    def __init__(self, num_trees=100, max_depth=100, num_feats=None):
+    def __init__(self, num_trees=15, max_depth=100, num_feats=None):
         print("Init RF-CLASS", self)
         self.num_trees = num_trees
         self.max_depth = max_depth
@@ -270,14 +268,11 @@ class Classifier:
 
     def predict(self, data, legal=None):
         print("_______________")
-        # ret = [
-        #     self.knn.predict(self.X_train, self.y_train, data), 
-        #     self.dt.predict(data), 
-        #     self.rf.predict(self.X_train, self.y_train ,data)]
-        # print("KNN", ret[0])
-        # print("DT", ret[1])
-        # print("RF", ret[2])
-        # return ret[1]
-        # return self.dt.predict(data)
-        return self.rf.predict(data)
+        ret = [
+            self.knn.predict(self.X_train, self.y_train, data), 
+            self.dt.predict(data), 
+            self.rf.predict(data)
+        ]
+        print("Options:", ret)
+        return mode(ret)
 
