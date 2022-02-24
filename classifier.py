@@ -43,7 +43,7 @@ def shuffleArray(listA, listB):
     shuffledIndexes = np.random.permutation(len(listA)) # returns a list of shuffled indexes
     return listA[shuffledIndexes], listB[shuffledIndexes] # returns arrays with the aforementioned shuffled list as indexes
 
-#
+# Shuffles the Features and Labels in unison and returns a desired train and test split of the data
 def trainTestSplit(X, y, splitSize):
     """
     :param X: list of values of n features and k samples
@@ -141,24 +141,17 @@ def giniAll(X,y):
     
     return featureGini
 
-def bootstraping(X,y):
-    numRows = len(X)
-    numSamples = int((2*numRows)/3)
-    randomIndexes = list(np.random.randint(low = 0,high = numRows, size=numSamples))
-    X = np.asarray(X)
-    y = np.asarray(y)
-    return X[randomIndexes], y[randomIndexes]
+# Shuffles the dataset and returns two thirds of the data
+def bootstrapData(X,y):
+    """
+    :param X: list of values of n features and k samples
+    :param y: list of labels of k samples
+    :return: Returns two arrays, both split and shuffled versions of the dataset
+    """
+    XBts, _, yBts, _ = trainTestSplit(X, y, 0.66) # We do not need the test sets here
+    return XBts, yBts
 
-def convertNumberToMove(number):
-        if number == 0:
-            return "NORTH"
-        elif number == 1:
-            return "EAST"
-        elif number == 2:
-            return "SOUTH"
-        elif number == 3:
-            return "WEST"
-
+# Calculates the new dataset values for both the Left(Zero) and Right(One) Branches
 def split(X,y,feat):
     zeroValsX = list()
     zeroValsY = list()
@@ -211,7 +204,6 @@ class KNNClassifier:
         # Extract the labels of the k nearest neighbor training samples
         labelledIndexes = [yTrain[i] for i in kIndexes]
         yPred = mode(labelledIndexes)
-        print("K-P:",convertNumberToMove(yPred))
         return yPred
 
 class DTClassifier:
@@ -257,7 +249,6 @@ class DTClassifier:
 
     def predict(self, data):
         yPred = self.search(data, self.root)
-        print("D-P:",convertNumberToMove(yPred))
         return yPred
 
 class RFClassifier:
@@ -273,7 +264,7 @@ class RFClassifier:
         for t in range(self.numTrees):
             print("Processing Tree", t)
             dt = DTClassifier(maxDepth=self.maxDepth, numFeats=self.numFeats)
-            XBts, yBts = bootstraping(X, y)
+            XBts, yBts = bootstrapData(X, y)
             dt.fit(XBts, yBts)
             self.trees.append(dt)
     
@@ -281,7 +272,6 @@ class RFClassifier:
         yPredsAll = [dt.predict(data) for dt in self.trees]
         print(yPredsAll)
         yPred = mode(yPredsAll)
-        print("R-P:",convertNumberToMove(yPred))
         return yPred
 
 class Classifier:
