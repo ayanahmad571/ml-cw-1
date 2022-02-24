@@ -153,6 +153,12 @@ def bootstrapData(X,y):
 
 # Calculates the new dataset values for both the Left(Zero) and Right(One) Branches
 def split(X,y,feat):
+    """
+    :param X: list of values of n features and k samples
+    :param y: list of labels of k samples
+    :param feat: index of the feature to split on
+    :return: Returns 4 arrays, 2 contain X and y datasets of the left branch and 2 contain that of the right branch
+    """
     zeroValsX = list()
     zeroValsY = list()
     oneValsX = list()
@@ -160,14 +166,16 @@ def split(X,y,feat):
     
     for rowIndex in range(len(X)):
        
-        atIndexVal = X[rowIndex][feat]
-        atIndexLabel = y[rowIndex]
-        if(atIndexVal == 0):
+        atRowFeatureVal = X[rowIndex][feat]
+        atRowLabel = y[rowIndex]
+        
+        # A feature has two values, either 1 or 0
+        if(atRowFeatureVal == 0):
             zeroValsX.append(X[rowIndex])
-            zeroValsY.append(atIndexLabel)
+            zeroValsY.append(atRowLabel)
         else:
             oneValsX.append(X[rowIndex])
-            oneValsY.append(atIndexLabel)
+            oneValsY.append(atRowLabel)
     
     return zeroValsX, zeroValsY, oneValsX, oneValsY
 
