@@ -181,72 +181,113 @@ def split(X,y,feat):
 
 ### End Global Functions
 
-
+# Class Definition for a Node, to be used in Decision Trees and Random Forest
 class Node:
-    def __init__(
-        self, feature=None, left=None, right=None, *, value=None
-    ):
+    def __init__(self, feature=None, left=None, right=None, value=None):
         self.feature = feature
         self.left = left
         self.right = right
         self.value = value
 
+    # A node is a leaf node if it has a value
     def isLeafNode(self):
+        """
+        :param self: class information
+        :return: boolean, true if it has a non null value
+        """
         return self.value is not None
 
+# KNN Classifier Class - Current Configuration = 5NN
 class KNNClassifier:
     def __init__(self):
-        # print("Init KNN ", self)
-        self.k = 5
-    
-    def predict(self, XTrain, yTrain, data):
-        # Compute distances between x and all examples in the training set        
-        eDiff = [listDiffCalc(data, xTrain) for xTrain in XTrain]
+        self.k = 5 
 
-        # Sort by distance and return indices of the first k neighbors        
-        minDiffIndexes = np.argsort(eDiff)
+    # Returns the predicted label for a given feature set
+    def predict(self, XTrain, yTrain, data):
+        """
+        :param self: class information
+        :param XTrain: list of values of n features and k samples
+        :param yTrain: list of labels of k samples
+        :param data: list of values of n features that have to be predicted (data to label)
+        :return: predicted value of the given features values 
+        """
+
+        # Compute distances between x and all examples in the training set        
+        featDiff = [listDiffCalc(data, xTrain) for xTrain in XTrain]
+
+        # Sort the array by distance and return their indices  
+        minDiffFeatures = np.argsort(featDiff)
         
+        # Get the indices of the first 5 values, (since they are the lowest values)
         # https://stackoverflow.com/questions/5234090/how-to-take-the-first-n-items-from-a-generator-or-list
-        kIndexes = minDiffIndexes[: self.k]
+        kFeatures = minDiffFeatures[: self.k]
         
-        # Extract the labels of the k nearest neighbor training samples
-        labelledIndexes = [yTrain[i] for i in kIndexes]
-        yPred = mode(labelledIndexes)
+        # Get labels of the k(5) nearest neighbor training data values
+        labelledFeatures = [yTrain[i] for i in kFeatures]
+
+        yPred = mode(labelledFeatures)
         return yPred
 
+# Decision Tree Classifier Class - Current Configuration = 100 max depth
 class DTClassifier:
-    def __init__(self, maxDepth = 100, numFeats = 25):
-        # print("Init DT-CLASS", self)
+    def __init__(self, maxDepth = 100):
         self.maxDepth = maxDepth
-        self.numFeats = numFeats
         self.root = None
     
-    
+    # Builds the tree based on the provided training dataset
     def fit(self, XTrain, yTrain):
+        """
+        :param self: class information
+        :param XTrain: list of values of n features and k samples
+        :param yTrain: list of labels of k samples
+        """
+        
         self.root = self.buildTree(XTrain, yTrain)
         pass
 
+    # Recursive function responsible for building the nodes and linking them
     def buildTree(self, X, y, depth=0, pluralityParent = 0):
+        """
+        :param self: class information
+        :param X: list of values of n features and k samples, is sent down recursively
+        :param y: list of labels of k samples, is sent down recursively
+        :param depth: the current depth of the node
+        :param pluralityParent: the value of the parent node
+        :return: Nodes with values and parameters for the tree
+        """
+        # Number of Unique Labels that are currently present in the data
         numUniqueLabels = len(np.unique(y))
         
-        #stop-condition
+        #stop-condition, either depth has reached Max Depth, or there isn't any useful split
         if(depth >= self.maxDepth or numUniqueLabels < 2):
+            # if there are no labels, return the value of the parent
             if len(y)<1:
-                return Node(value = pluralityParent) # TODO: Add some parent code   
+                return Node(value = pluralityParent)
             return Node(value = mode(y))
         
         yMode = mode(y)
-        
-        giniVals = giniAll(X, y)
+        giniVals = giniAll(X, y) # Extract Gini values for all features
         giniValsNp = np.asarray(giniVals)
-        lowestGiniFeatureIndex = np.argmin(giniValsNp)
+        lowestGiniFeatureIndex = np.argmin(giniValsNp) # Get the index of the feature with the lowest gini value
         zeroValsX, zeroValsY, oneValsX, oneValsY = split(X, y, lowestGiniFeatureIndex)
+        
+        # Build the tree recursively
         left = self.buildTree(zeroValsX, zeroValsY, depth + 1, yMode)
         right = self.buildTree(oneValsX, oneValsY, depth + 1, yMode)
 
+        # Nodes with a left and right branch will not hold a value
         return Node(lowestGiniFeatureIndex, left, right)
 
+    # Searches through the tree and return the value of the node
     def search(self, x, node):
+        """
+        :param self: class information
+        :param x: list of values of n features, data to be labelled
+        :param node: the node that needs to be searched
+        :return: predicted value of the given features values based on the current node 
+        """
+
+        # For leaf nodes, return the value
         if node.isLeafNode():
             return node.value
 
@@ -254,62 +295,92 @@ class DTClassifier:
             return self.search(x, node.left)
         return self.search(x, node.right)
 
-
+    # Returns the predicted label for a given feature set 
     def predict(self, data):
+        """
+        :param self: class information
+        :param data: list of values of n features that have to be predicted (data to label)
+        :return: predicted value of the given features values 
+        """
         yPred = self.search(data, self.root)
         return yPred
 
+# Random Forest Classifier, Current Configuration = 20 Trees
 class RFClassifier:
-    def __init__(self, numTrees=20, maxDepth=100, numFeats=None):
-        # print("Init RF-CLASS", self)
+    def __init__(self, numTrees=20, maxDepth=100):
         self.numTrees = numTrees
         self.maxDepth = maxDepth
-        self.numFeats = numFeats
         self.trees = []
     
+    # Builds the desired number of trees and stores them
     def fit(self, X, y):
+        """
+        :param self: class information
+        :param X: list of values of n features and k samples
+        :param y: list of labels of k samples
+        """
         self.trees = []
         for t in range(self.numTrees):
             print("Processing Tree", t)
-            dt = DTClassifier(maxDepth=self.maxDepth, numFeats=self.numFeats)
-            XBts, yBts = bootstrapData(X, y)
+            dt = DTClassifier(maxDepth=self.maxDepth)
+            XBts, yBts = bootstrapData(X, y) # Get a random shuffle and split of data
             dt.fit(XBts, yBts)
             self.trees.append(dt)
     
+    # Returns the predicted label for a given feature set
     def predict(self, data):
-        yPredsAll = [dt.predict(data) for dt in self.trees]
-        print(yPredsAll)
-        yPred = mode(yPredsAll)
-        return yPred
+        """
+        :param self: class information
+        :param data: list of values of n features that have to be predicted (data to label)
+        :return: predicted value of the given features values 
+        """
+        labelPredAll = [dt.predict(data) for dt in self.trees] # Predict values for each decision tree
+        labelPred = mode(labelPredAll)
+        return labelPred
 
+# Classifier Class, serves as an ensemble class.
+# Utilizes and extracts predictions from all features and weights them.
 class Classifier:
     def __init__(self):
         self.knn = KNNClassifier()
         self.dt = DTClassifier()
         self.rf = RFClassifier()
-
+    
+    # Un-sets all classifier instances
     def reset(self):
-        print("RESET-ALL", self)
+        """
+        :param self: class information
+        """
         self.knn = None
         self.dt = None
         self.rf = None
-    
+
+    # Calls the Fit function on Decision Trees and Random Forest classifiers 
     def fit(self, data, target):
-        print("FIT", data, target)
-        self.X = data
-        self.y = target
+        """
+        :param self: class information
+        :param data: list of values of n features and k samples
+        :param target: list of labels of k samples
+        """
         self.XTrain, self.XTest, self.yTrain, self.yTest = trainTestSplit(data, target, 0.8)
 
         self.dt.fit(self.XTrain, self.yTrain)
         self.rf.fit(self.XTrain, self.yTrain)
     
-
+    # Returns the predicted label for a given feature set, mode of predicted values by all classifiers
     def predict(self, data, legal=None):
-        print("_______________")
+        """
+        :param self: class information
+        :param data: list of values of n features that have to be predicted (data to label)
+        :param legal: The legal moves, set to None by default
+        :return: predicted value of the given features values 
+        """
+
         ret = [
             self.knn.predict(self.XTrain, self.yTrain, data), 
             self.dt.predict(data), 
             self.rf.predict(data)
         ]
-        print("Options:", ret)
+        # Currently the mode is being returned, but we could weight them by replicating the value of one classifier
+        # and thereby giving it more importance
         return mode(ret)
