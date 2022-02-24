@@ -14,115 +14,140 @@ from statistics import mode
 
 ### Start Global Functions
 
-def e_diff_calc(a, b):
+# Calculates mathematical distances between two lists of numbers of equal size
+def listDiffCalc(listA, listB):
     """
-    e_diff_calc does blah
-
-    :param p1: desc
-    :param p1: desc
-    :return: describe what it returns
+    :param listA: List A, list of values of n features and k samples
+    :param listB: List B, list of values of n features and k samples
+    :return: distance between the two lists as a float 
     """
-    a = np.asarray(a)
-    # print(x1,x2)
-    # print("______________")
-    # print(x1 - x2)
-    # print((x1 - x2) ** 2)
-    # print(np.sum((x1 - x2) ** 2))
-    # print("SUM:", np.sqrt(np.sum((x1 - x2) ** 2)))
+    
+    listA = np.asarray(listA) 
+    differenceLists = (listA - listB)
+    squareLists = differenceLists ** 2
+    sumElements = np.sum(squareLists) 
+    sqrtValue = np.sqrt(sumElements)
+    return sqrtValue
 
-    return np.sqrt(np.sum((a - b) ** 2))
-
+# Taken two arrays as input and shuffles both the arrays in unison
 # https://stackoverflow.com/questions/4601373/better-way-to-shuffle-two-numpy-arrays-in-unison
-def shuffle_array(a, b):
-    a = np.asarray(a)
-    b = np.asarray(b)
-    assert len(a) == len(b)
-    p = np.random.permutation(len(a))
-    return a[p], b[p]
+def shuffleArray(listA, listB):
+    """
+    :param listA: List A, list of values of n features and k samples
+    :param listB: List B, list of labels of k samples
+    :return: Two randomly shuffled lists of the same number of samples, shuffled in unison.
+    """
+    listA = np.asarray(listA)
+    listB = np.asarray(listB)
+    assert len(listA) == len(listB)
+    shuffledIndexes = np.random.permutation(len(listA)) # returns a list of shuffled indexes
+    return listA[shuffledIndexes], listB[shuffledIndexes] # returns arrays with the aforementioned shuffled list as indexes
 
-def train_test_split(X, y, split):
-    shuffle_X, shuffle_y = shuffle_array(X,y) 
-    X_train = list()
-    X_test = list()
-    y_train = list()
-    y_test = list()
+#
+def trainTestSplit(X, y, splitSize):
+    """
+    :param X: list of values of n features and k samples
+    :param y: list of labels of k samples
+    :param splitSize: the percentage of samples to be used as training data
+    :return: 2 arrays for the feature values and 2 arrays for labelled values of k samples.
+    """
+    shuffleX, shuffleY = shuffleArray(X,y) # shuffle the arrays each time to ensure fresh sample is split
+    XTrain = list()
+    XTest = list()
+    yTrain = list()
+    yTest = list()
 
-    train_len = math.floor(split * len(shuffle_X))
+    trainLen = math.floor(splitSize * len(shuffleX)) # Approximation of the number of samples, since it has to be an int
 
-    for i in range(train_len):
-        X_train.append(shuffle_X[i])
-        y_train.append(shuffle_y[i])
-        new_i = i+train_len
-        if(new_i < len(shuffle_X)):
-            X_test.append(shuffle_X[new_i])
-            y_test.append(shuffle_y[new_i])
+    # loop trainlen many times and add data to both train and test sets
+    for i in range(trainLen):
+        XTrain.append(shuffleX[i])
+        yTrain.append(shuffleY[i])
+        newI = i + trainLen
+        
+        # Key Assumption for the below condition, training set is always more than test set
+        # the current iteration index is added to the total size of the dataset.
+        # hence that accesses the test set
 
-    return X_train, X_test, y_train, y_test
+        if(newI < len(shuffleX)):
+            XTest.append(shuffleX[newI])
+            yTest.append(shuffleY[newI])
 
-def gini_impurity(data):
-    # print("Gini Impurity Calculation")
+    return XTrain, XTest, yTrain, yTest
+
+# Calculates the gini impurity of a given features provided all data is labelled
+def giniImpurity(data):
+    """
+    :param data: list of values of n features and k samples
+    :return: gini impurity of the given branch, of a particular feature
+    """
+    
     lables = {0,1,2,3}
-    data_len = len(data)
-    if data_len == 0:
-        data_len = 1
-    gini_values = [(data.count(l)/data_len)**2 for l in lables]
-    gini_imp =1-sum(gini_values) 
-    # print(gini_imp)
-    return gini_imp
+    dataLen = len(data)
 
-def gini_feat(X,y, feat):
-    zeroVals = list()
-    oneVals = list()
+    # If there is no data, then safeguard against zero division.
+    if dataLen == 0:
+        dataLen = 1
+
+    # list of number of elements of each label divided by total number of elements, squared
+    giniValues = [(data.count(l) / dataLen) ** 2 for l in lables] 
+    giniImp =1-sum(giniValues) 
+
+    return giniImp
+
+# Calculates the gini impurity of a given features provided all data is labelled
+def giniFeat(X, y, featIndex):
+    """
+    :param X: list of values of n features and k samples
+    :param y: list of labels of k samples
+    :param featIndex: the percentage of samples to be used as training data
+    :return: gini impurity value of the current feature
+    """
+    zeroVals = list() # For when feature value is 0
+    oneVals = list() # For when feature value is 1
     
-    for val_index in range(len(X)):
-        
-        
-        at_index_val = X[val_index][feat]
-        at_index_label = y[val_index]
-        if(at_index_val == 0):
-            zeroVals.append(at_index_label)
+    for rowIndex in range(len(X)):
+        atRowFeatureVal = X[rowIndex][featIndex]
+        atRowLabel = y[rowIndex]
+        if(atRowFeatureVal == 0):
+            zeroVals.append(atRowLabel)
         else:
-            oneVals.append(at_index_label)
+            oneVals.append(atRowLabel)
 
-    # print(zeroVals)
-    # print(oneVals)
+    # Calculate Individual impurities for each branch
+    zeroGiniImp = giniImpurity(zeroVals)
+    oneGiniImp = giniImpurity(oneVals)
     
-    # print("Zero Gini", len(zeroVals))
-    zeroGiniImp = gini_impurity(zeroVals)
-    
-    # print("One Gini", len(oneVals))
-    oneGiniImp = gini_impurity(oneVals)
-    
+    # Weighted combination of the individual gini values
     # We could just do len(feat) but if in case some data is missing
-    feature_len = len(zeroVals) + len(oneVals)
-    
-    total_gini = (len(zeroVals)*zeroGiniImp + len(oneVals)*oneGiniImp)/feature_len
-    # print("total gini")
-    # print(total_gini)
-    
+    featureLen = len(zeroVals) + len(oneVals)
+    totalGini = (len(zeroVals) * zeroGiniImp + len(oneVals) * oneGiniImp)/featureLen # Gini Formula
+    return totalGini
 
-    # print("_____")
-    # gini_impurity()
-    return total_gini
+# Calculates the gini value of all features given a complete labelled dataset
+def giniAll(X,y):
+    """
+    :param X: list of values of n features and k samples
+    :param y: list of labels of k samples
+    :return: list of gini values for all features of a dataset
+    """
+    numFeatures = len(X[0]) 
     
-def gini_all(X,y):
-    # print(len(X))
-    num_feats = len(X[0]) 
+    featureGini = list()
+
+    # for each feature calculate the gini and append to the array
+    for fIndex in range(numFeatures):
+        featureGini.append(giniFeat(X,y,fIndex))
     
-    feature_gini = list()
-    for f in range(num_feats):
-        # print("Processing Feature ",f)
-        feature_gini.append(gini_feat(X,y,f))
-    
-    return feature_gini
+    return featureGini
 
 def bootstraping(X,y):
-    num_rows = len(X)
-    num_samples = int((2*num_rows)/3)
-    random_indexes = list(np.random.randint(low = 0,high = num_rows, size=num_samples))
+    numRows = len(X)
+    numSamples = int((2*numRows)/3)
+    randomIndexes = list(np.random.randint(low = 0,high = numRows, size=numSamples))
     X = np.asarray(X)
     y = np.asarray(y)
-    return X[random_indexes], y[random_indexes]
+    return X[randomIndexes], y[randomIndexes]
 
 def convertNumberToMove(number):
         if number == 0:
@@ -135,23 +160,23 @@ def convertNumberToMove(number):
             return "WEST"
 
 def split(X,y,feat):
-    zeroVals_X = list()
-    zeroVals_y = list()
-    oneVals_X = list()
-    oneVals_y = list()
+    zeroValsX = list()
+    zeroValsY = list()
+    oneValsX = list()
+    oneValsY = list()
     
-    for row_index in range(len(X)):
+    for rowIndex in range(len(X)):
        
-        at_index_val = X[row_index][feat]
-        at_index_label = y[row_index]
-        if(at_index_val == 0):
-            zeroVals_X.append(X[row_index])
-            zeroVals_y.append(at_index_label)
+        atIndexVal = X[rowIndex][feat]
+        atIndexLabel = y[rowIndex]
+        if(atIndexVal == 0):
+            zeroValsX.append(X[rowIndex])
+            zeroValsY.append(atIndexLabel)
         else:
-            oneVals_X.append(X[row_index])
-            oneVals_y.append(at_index_label)
+            oneValsX.append(X[rowIndex])
+            oneValsY.append(atIndexLabel)
     
-    return zeroVals_X, zeroVals_y, oneVals_X, oneVals_y
+    return zeroValsX, zeroValsY, oneValsX, oneValsY
 
 ### End Global Functions
 
@@ -165,7 +190,7 @@ class Node:
         self.right = right
         self.value = value
 
-    def is_leaf_node(self):
+    def isLeafNode(self):
         return self.value is not None
 
 class KNNClassifier:
@@ -173,56 +198,56 @@ class KNNClassifier:
         # print("Init KNN ", self)
         self.k = 5
     
-    def predict(self, X_train, y_train, data):
+    def predict(self, XTrain, yTrain, data):
         # Compute distances between x and all examples in the training set        
-        e_diff = [e_diff_calc(data, x_train) for x_train in X_train]
+        eDiff = [listDiffCalc(data, xTrain) for xTrain in XTrain]
 
         # Sort by distance and return indices of the first k neighbors        
-        min_diff_indexes = np.argsort(e_diff)
+        minDiffIndexes = np.argsort(eDiff)
         
         # https://stackoverflow.com/questions/5234090/how-to-take-the-first-n-items-from-a-generator-or-list
-        k_indexes = min_diff_indexes[: self.k]
+        kIndexes = minDiffIndexes[: self.k]
         
         # Extract the labels of the k nearest neighbor training samples
-        labelled_indexes = [y_train[i] for i in k_indexes]
-        y_pred = mode(labelled_indexes)
-        print("K-P:",convertNumberToMove(y_pred))
-        return y_pred
+        labelledIndexes = [yTrain[i] for i in kIndexes]
+        yPred = mode(labelledIndexes)
+        print("K-P:",convertNumberToMove(yPred))
+        return yPred
 
 class DTClassifier:
-    def __init__(self, max_depth = 100, num_feats = 25):
+    def __init__(self, maxDepth = 100, numFeats = 25):
         # print("Init DT-CLASS", self)
-        self.max_depth = max_depth
-        self.num_feats = num_feats
+        self.maxDepth = maxDepth
+        self.numFeats = numFeats
         self.root = None
     
     
-    def fit(self, X_train, y_train):
-        self.root = self.build_tree(X_train, y_train)
+    def fit(self, XTrain, yTrain):
+        self.root = self.buildTree(XTrain, yTrain)
         pass
 
-    def build_tree(self, X, y, depth=0, plurality_parent = 0):
-        num_unique_labels = len(np.unique(y))
+    def buildTree(self, X, y, depth=0, pluralityParent = 0):
+        numUniqueLabels = len(np.unique(y))
         
         #stop-condition
-        if(depth >= self.max_depth or num_unique_labels < 2):
+        if(depth >= self.maxDepth or numUniqueLabels < 2):
             if len(y)<1:
-                return Node(value = plurality_parent) # TODO: Add some parent code   
+                return Node(value = pluralityParent) # TODO: Add some parent code   
             return Node(value = mode(y))
         
-        y_mode = mode(y)
+        yMode = mode(y)
         
-        gini_vals = gini_all(X, y)
-        gini_vals_np = np.asarray(gini_vals)
-        lowest_gini_feature_index = np.argmin(gini_vals_np)
-        zeroVals_X, zeroVals_y, oneVals_X, oneVals_y = split(X, y, lowest_gini_feature_index)
-        left = self.build_tree(zeroVals_X, zeroVals_y, depth + 1, y_mode)
-        right = self.build_tree(oneVals_X, oneVals_y, depth + 1, y_mode)
+        giniVals = giniAll(X, y)
+        giniValsNp = np.asarray(giniVals)
+        lowestGiniFeatureIndex = np.argmin(giniValsNp)
+        zeroValsX, zeroValsY, oneValsX, oneValsY = split(X, y, lowestGiniFeatureIndex)
+        left = self.buildTree(zeroValsX, zeroValsY, depth + 1, yMode)
+        right = self.buildTree(oneValsX, oneValsY, depth + 1, yMode)
 
-        return Node(lowest_gini_feature_index, left, right)
+        return Node(lowestGiniFeatureIndex, left, right)
 
     def search(self, x, node):
-        if node.is_leaf_node():
+        if node.isLeafNode():
             return node.value
 
         if x[node.feature] < 1:
@@ -231,33 +256,33 @@ class DTClassifier:
 
 
     def predict(self, data):
-        y_pred = self.search(data, self.root)
-        print("D-P:",convertNumberToMove(y_pred))
-        return y_pred
+        yPred = self.search(data, self.root)
+        print("D-P:",convertNumberToMove(yPred))
+        return yPred
 
 class RFClassifier:
-    def __init__(self, num_trees=20, max_depth=100, num_feats=None):
+    def __init__(self, numTrees=20, maxDepth=100, numFeats=None):
         # print("Init RF-CLASS", self)
-        self.num_trees = num_trees
-        self.max_depth = max_depth
-        self.num_feats = num_feats
+        self.numTrees = numTrees
+        self.maxDepth = maxDepth
+        self.numFeats = numFeats
         self.trees = []
     
     def fit(self, X, y):
         self.trees = []
-        for t in range(self.num_trees):
+        for t in range(self.numTrees):
             print("Processing Tree", t)
-            dt = DTClassifier(max_depth=self.max_depth, num_feats=self.num_feats)
-            X_bts, y_bts = bootstraping(X, y)
-            dt.fit(X_bts, y_bts)
+            dt = DTClassifier(maxDepth=self.maxDepth, numFeats=self.numFeats)
+            XBts, yBts = bootstraping(X, y)
+            dt.fit(XBts, yBts)
             self.trees.append(dt)
     
     def predict(self, data):
-        y_preds_all = [dt.predict(data) for dt in self.trees]
-        print(y_preds_all)
-        y_pred = mode(y_preds_all)
-        print("R-P:",convertNumberToMove(y_pred))
-        return y_pred
+        yPredsAll = [dt.predict(data) for dt in self.trees]
+        print(yPredsAll)
+        yPred = mode(yPredsAll)
+        print("R-P:",convertNumberToMove(yPred))
+        return yPred
 
 class Classifier:
     def __init__(self):
@@ -275,16 +300,16 @@ class Classifier:
         print("FIT", data, target)
         self.X = data
         self.y = target
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, target, 0.8)
+        self.XTrain, self.XTest, self.yTrain, self.yTest = trainTestSplit(data, target, 0.8)
 
-        self.dt.fit(self.X_train, self.y_train)
-        self.rf.fit(self.X_train, self.y_train)
+        self.dt.fit(self.XTrain, self.yTrain)
+        self.rf.fit(self.XTrain, self.yTrain)
     
 
     def predict(self, data, legal=None):
         print("_______________")
         ret = [
-            self.knn.predict(self.X_train, self.y_train, data), 
+            self.knn.predict(self.XTrain, self.yTrain, data), 
             self.dt.predict(data), 
             self.rf.predict(data)
         ]
